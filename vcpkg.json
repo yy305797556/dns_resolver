@@ -1,0 +1,25 @@
+{
+  "name": "dnsresolver",
+  "version-string": "1.0.0",
+  "builtin-baseline": "509f71e53f45e46c13fa7935d2f6a45803580c07",
+  "dependencies": [
+    {
+      "name": "vcpkg-cmake-config",
+      "version>=": "2022-02-06#1",
+      "host": true
+    },
+    {
+      "name": "vcpkg-cmake",
+      "version>=": "2024-04-18",
+      "host": true
+    },
+    {
+      "name": "gtest",
+      "version>=": "1.14.0#1"
+    },
+    {
+      "name": "c-ares",
+      "version>=": "1.34.5"
+    }
+  ]
+}
