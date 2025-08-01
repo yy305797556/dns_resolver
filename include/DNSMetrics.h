@@ -40,7 +40,6 @@ public:
     Stats getStats() const;
     void resetStats();
 
-
     void setAlertThresholds(double error_rate_threshold, std::chrono::milliseconds latency_threshold);
     void registerAlertCallback(AlertCallback callback);
     void clearAlertCallbacks();

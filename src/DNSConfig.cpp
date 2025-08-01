@@ -41,7 +41,6 @@ DNSResolverConfig &DNSResolverConfig::getInstance() {
 }
 
 DNSResolverConfig::DNSResolverConfig() {
-
     // 默认DNS服务器配置
     servers_.push_back({
             "114.114.114.114",//
@@ -211,14 +210,11 @@ void DNSResolverConfig::addServer(const DNSServerConfig &server) {
 }
 
 void DNSResolverConfig::removeServer(const std::string &address) {
-    servers_.erase(
-            std::remove_if(
-                    servers_.begin(),
-                    servers_.end(),
-                    [&address](const DNSServerConfig &server) {
-                        return server.address == address;
-                    }),
-            servers_.end());
+    std::erase_if(
+            servers_,
+            [&address](const DNSServerConfig &server) {
+                return server.address == address;
+            });
 
     // 确保至少保留一个启用的服务器
     bool has_enabled = false;
@@ -252,8 +248,7 @@ void DNSResolverConfig::setServers(const std::vector<DNSServerConfig> &servers) 
 
     for (const auto &server: servers) {
         if (!addresses.insert(server.address).second) {
-            throw ConfigValidationError(
-                    "Duplicate server address: " + server.address);
+            throw ConfigValidationError("Duplicate server address: " + server.address);
         }
         if (server.enabled) {
             has_enabled = true;
@@ -261,8 +256,7 @@ void DNSResolverConfig::setServers(const std::vector<DNSServerConfig> &servers) 
     }
 
     if (!servers.empty() && !has_enabled) {
-        throw ConfigValidationError(
-                "At least one server must be enabled");
+        throw ConfigValidationError("At least one server must be enabled");
     }
 
     servers_ = servers;
@@ -270,13 +264,11 @@ void DNSResolverConfig::setServers(const std::vector<DNSServerConfig> &servers) 
 
 void DNSResolverConfig::setCacheConfig(const CacheConfig &cache) {
     if (cache.ttl.count() < 1 || cache.ttl.count() > 86400) {
-        throw ConfigValidationError(
-                "Cache TTL must be between 1 and 86400 seconds");
+        throw ConfigValidationError("Cache TTL must be between 1 and 86400 seconds");
     }
 
     if (cache.max_size < 100 || cache.max_size > 1000000) {
-        throw ConfigValidationError(
-                "Cache max size must be between 100 and 1000000 entries");
+        throw ConfigValidationError("Cache max size must be between 100 and 1000000 entries");
     }
 
     cache_ = cache;
@@ -284,19 +276,16 @@ void DNSResolverConfig::setCacheConfig(const CacheConfig &cache) {
 
 void DNSResolverConfig::setRetryConfig(const RetryConfig &retry) {
     if (retry.max_attempts < 1 || retry.max_attempts > 10) {
-        throw ConfigValidationError(
-                "Max retry attempts must be between 1 and 10");
+        throw ConfigValidationError("Max retry attempts must be between 1 and 10");
     }
 
     if (retry.base_delay_ms < 50 || retry.base_delay_ms > 1000) {
-        throw ConfigValidationError(
-                "Base retry delay must be between 50ms and 1000ms");
+        throw ConfigValidationError("Base retry delay must be between 50ms and 1000ms");
     }
 
     if (retry.max_delay_ms < retry.base_delay_ms ||
         retry.max_delay_ms > 10000) {
-        throw ConfigValidationError(
-                "Max retry delay must be between base delay and 10000ms");
+        throw ConfigValidationError("Max retry delay must be between base delay and 10000ms");
     }
 
     retry_ = retry;
@@ -304,30 +293,27 @@ void DNSResolverConfig::setRetryConfig(const RetryConfig &retry) {
 
 void DNSResolverConfig::setMetricsConfig(const MetricsConfig &metrics) {
     if (metrics.enabled && metrics.report_interval_sec < 1) {
-        throw ConfigValidationError(
-                "Metrics report interval must be at least 1 second");
+        throw ConfigValidationError("Metrics report interval must be at least 1 second");
     }
 
     metrics_ = metrics;
 }
 
-void DNSResolverConfig::setQueryTimeout(uint32_t timeout_ms) {
+void DNSResolverConfig::setQueryTimeout(const uint32_t timeout_ms) {
     if (timeout_ms < 100 || timeout_ms > 30000) {
-        throw ConfigValidationError(
-                "Query timeout must be between 100ms and 30000ms");
+        throw ConfigValidationError("Query timeout must be between 100ms and 30000ms");
     }
     query_timeout_ms_ = timeout_ms;
 }
 
-void DNSResolverConfig::setMaxConcurrentQueries(uint32_t max_queries) {
+void DNSResolverConfig::setMaxConcurrentQueries(const uint32_t max_queries) {
     if (max_queries < 1 || max_queries > 10000) {
-        throw ConfigValidationError(
-                "Max concurrent queries must be between 1 and 10000");
+        throw ConfigValidationError("Max concurrent queries must be between 1 and 10000");
     }
     max_concurrent_queries_ = max_queries;
 }
 
-void DNSResolverConfig::setIPv6Enabled(bool enabled) {
+void DNSResolverConfig::setIPv6Enabled(const bool enabled) {
     ipv6_enabled_ = enabled;
 }
 
@@ -378,92 +364,77 @@ DNSResolverConfigBuilder &DNSResolverConfigBuilder::clearServers() {
     return *this;
 }
 
-DNSResolverConfigBuilder &DNSResolverConfigBuilder::setCacheEnabled(
-        bool enabled) {
+DNSResolverConfigBuilder &DNSResolverConfigBuilder::setCacheEnabled(const bool enabled) {
     cache_.enabled = enabled;
     return *this;
 }
 
-DNSResolverConfigBuilder &DNSResolverConfigBuilder::setCacheTTL(
-        std::chrono::seconds ttl) {
+DNSResolverConfigBuilder &DNSResolverConfigBuilder::setCacheTTL(const std::chrono::seconds ttl) {
     cache_.ttl = ttl;
     return *this;
 }
 
-DNSResolverConfigBuilder &DNSResolverConfigBuilder::setCacheMaxSize(
-        size_t max_size) {
+DNSResolverConfigBuilder &DNSResolverConfigBuilder::setCacheMaxSize(const size_t max_size) {
     cache_.max_size = max_size;
     return *this;
 }
 
-DNSResolverConfigBuilder &DNSResolverConfigBuilder::setCachePersistent(
-        bool persistent) {
+DNSResolverConfigBuilder &DNSResolverConfigBuilder::setCachePersistent(const bool persistent) {
     cache_.persistent = persistent;
     return *this;
 }
 
-DNSResolverConfigBuilder &DNSResolverConfigBuilder::setCacheFile(
-        const std::string &file) {
+DNSResolverConfigBuilder &DNSResolverConfigBuilder::setCacheFile(const std::string &file) {
     cache_.cache_file = file;
     return *this;
 }
 
-DNSResolverConfigBuilder &DNSResolverConfigBuilder::setRetryAttempts(
-        uint32_t attempts) {
+DNSResolverConfigBuilder &DNSResolverConfigBuilder::setRetryAttempts(const uint32_t attempts) {
     retry_.max_attempts = attempts;
     return *this;
 }
 
-DNSResolverConfigBuilder &DNSResolverConfigBuilder::setRetryBaseDelay(
-        uint32_t delay_ms) {
+DNSResolverConfigBuilder &DNSResolverConfigBuilder::setRetryBaseDelay(const uint32_t delay_ms) {
     retry_.base_delay_ms = delay_ms;
     return *this;
 }
 
-DNSResolverConfigBuilder &DNSResolverConfigBuilder::setRetryMaxDelay(
-        uint32_t delay_ms) {
+DNSResolverConfigBuilder &DNSResolverConfigBuilder::setRetryMaxDelay(const uint32_t delay_ms) {
     retry_.max_delay_ms = delay_ms;
     return *this;
 }
 
-DNSResolverConfigBuilder &DNSResolverConfigBuilder::setMetricsEnabled(
-        bool enabled) {
+DNSResolverConfigBuilder &DNSResolverConfigBuilder::setMetricsEnabled(const bool enabled) {
     metrics_.enabled = enabled;
     return *this;
 }
 
-DNSResolverConfigBuilder &DNSResolverConfigBuilder::setMetricsFile(
-        const std::string &file) {
+DNSResolverConfigBuilder &DNSResolverConfigBuilder::setMetricsFile(const std::string &file) {
     metrics_.metrics_file = file;
     return *this;
 }
 
-DNSResolverConfigBuilder &DNSResolverConfigBuilder::setMetricsInterval(
-        uint32_t interval_sec) {
+DNSResolverConfigBuilder &DNSResolverConfigBuilder::setMetricsInterval(const uint32_t interval_sec) {
     metrics_.report_interval_sec = interval_sec;
     return *this;
 }
 
-DNSResolverConfigBuilder &DNSResolverConfigBuilder::setPrometheusAddress(
-        const std::string &address) {
+DNSResolverConfigBuilder &DNSResolverConfigBuilder::setPrometheusAddress(const std::string &address) {
     metrics_.prometheus_address = address;
     return *this;
 }
 
-DNSResolverConfigBuilder &DNSResolverConfigBuilder::setQueryTimeout(
-        uint32_t timeout_ms) {
+DNSResolverConfigBuilder &DNSResolverConfigBuilder::setQueryTimeout(const uint32_t timeout_ms) {
     query_timeout_ms_ = timeout_ms;
     return *this;
 }
 
-DNSResolverConfigBuilder &DNSResolverConfigBuilder::setMaxConcurrentQueries(
-        uint32_t max_queries) {
+DNSResolverConfigBuilder &DNSResolverConfigBuilder::setMaxConcurrentQueries(uint32_t max_queries) {
     max_concurrent_queries_ = max_queries;
     return *this;
 }
 
-DNSResolverConfigBuilder &DNSResolverConfigBuilder::setIPv6Enabled(
-        bool enabled) {
+DNSResolverConfigBuilder &DNSResolverConfigBuilder::setIPv6Enabled(const bool enabled) {
     ipv6_enabled_ = enabled;
     return *this;
 }
@@ -481,9 +452,7 @@ DNSResolverConfig DNSResolverConfigBuilder::build() const {
         config.setMaxConcurrentQueries(max_concurrent_queries_);
         config.setIPv6Enabled(ipv6_enabled_);
     } catch (const ConfigValidationError &e) {
-        throw ConfigValidationError(
-                std::string("Configuration validation failed during build: ") +
-                e.what());
+        throw ConfigValidationError(std::string("Configuration validation failed during build: ") + e.what());
     }
 
     return config;

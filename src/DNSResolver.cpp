@@ -98,10 +98,7 @@ bool DNSResolver::loadConfig(const DNSResolverConfig &config) {
         if (config.cache().enabled && config.cache().persistent) {
             load_cache(config.cache().cache_file);
         }
-
         config_ = std::make_shared<DNSResolverConfig>(config);
-        return true;
-
     } catch (const ConfigValidationError &e) {
         std::cerr << "Configuration validation error: " << e.what() << std::endl;
         return false;
@@ -109,6 +106,8 @@ bool DNSResolver::loadConfig(const DNSResolverConfig &config) {
         std::cerr << "Error loading configuration: " << e.what() << std::endl;
         return false;
     }
+
+    return true;
 }
 
 bool DNSResolver::loadConfig(const std::string &config_file) {
@@ -141,7 +140,7 @@ std::future<DNSResolver::ResolveResult> DNSResolver::resolve(const std::string &
 
     if (!initialized_) {
         std::promise<ResolveResult> promise;
-        promise.set_value({hostname, {}, ARES_ENOTINITIALIZED});
+        promise.set_value({ARES_ENOTINITIALIZED, hostname, {}});
         return promise.get_future();
     }
 
@@ -253,11 +252,10 @@ DNSMetrics::Stats DNSResolver::getStats() const {
 }
 
 void DNSResolver::socket_callback(void *data, ares_socket_t socket_fd, int readable, int writable) {
-    auto *resolver = static_cast<DNSResolver *>(data);
+    // auto *resolver = static_cast<DNSResolver *>(data);
     sockaddr_storage addr{};
     socklen_t addr_len = sizeof(addr);
     char ipstr[INET6_ADDRSTRLEN] = {0};
-
     // 获取远端地址
     if (getpeername(socket_fd, reinterpret_cast<struct sockaddr *>(&addr), &addr_len) == 0) {
         void *src = nullptr;
@@ -267,16 +265,17 @@ void DNSResolver::socket_callback(void *data, ares_socket_t socket_fd, int reada
             src = &(reinterpret_cast<struct sockaddr_in6 *>(&addr)->sin6_addr);
         }
 
-        if (src) {
-            inet_ntop(addr.ss_family, src, ipstr, sizeof(ipstr));
-            resolver->socket_server_map_[socket_fd] = ipstr;
+        if (src && inet_ntop(addr.ss_family, src, ipstr, sizeof(ipstr))) {
+            // std::lock_guard<std::mutex> lock(resolver->mutex_);
+            // resolver->socket_server_map_[socket_fd] = ipstr;
         }
     } else {
         std::cerr << "getpeername" << std::endl;
     }
 
     if (!readable && !writable) {
-        resolver->socket_server_map_.erase(socket_fd);
+        // std::lock_guard<std::mutex> lock(resolver->mutex_);
+        // resolver->socket_server_map_.erase(socket_fd);
     }
 }
 

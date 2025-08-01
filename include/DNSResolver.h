@@ -13,9 +13,9 @@
 class DNSResolver : public std::enable_shared_from_this<DNSResolver> {
 public:
     struct ResolveResult {
+        int status;
         std::string hostname;
         std::vector<std::string> ip_addresses;
-        int status;
         std::chrono::milliseconds resolution_time;
     };
 
@@ -46,6 +46,7 @@ public:
     DNSMetrics::Stats getStats() const;
 
 private:
+    mutable std::mutex mutex_;
     struct QueryContext {
         std::string hostname;
         std::promise<ResolveResult> promise;
@@ -67,5 +68,5 @@ private:
     std::shared_ptr<DNSMetrics> metrics_{};
     std::shared_ptr<DNSResolverConfig> config_{};
     std::vector<std::string> dns_server_list_{};
-    std::unordered_map<ares_socket_t, std::string> socket_server_map_;
+    using QueryContextPtr = std::shared_ptr<QueryContext>;
 };

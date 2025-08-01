@@ -92,8 +92,7 @@ void DNSConfigValidator::validateCache(const CacheConfig &cache) {
             throw ConfigValidationError("Cache max size must be between 100 and 1000000 entries");
         }
 
-        if (cache.persistent) {
-#if 0
+        if (cache.persistent && !cache.cache_file.empty()) {
             if (!isValidPath(cache.cache_file)) {
                 throw ConfigValidationError("Invalid cache file path: " + cache.cache_file);
             }
@@ -119,26 +118,22 @@ void DNSConfigValidator::validateCache(const CacheConfig &cache) {
             } catch (const std::exception &e) {
                 throw ConfigValidationError("Cache file access error: " + std::string(e.what()));
             }
-#endif
         }
     }
 }
 
 void DNSConfigValidator::validateRetry(const RetryConfig &retry) {
     if (retry.max_attempts < 1 || retry.max_attempts > 10) {
-        throw ConfigValidationError(
-                "Max retry attempts must be between 1 and 10");
+        throw ConfigValidationError("Max retry attempts must be between 1 and 10");
     }
 
     if (retry.base_delay_ms < 50 || retry.base_delay_ms > 1000) {
-        throw ConfigValidationError(
-                "Base retry delay must be between 50ms and 1000ms");
+        throw ConfigValidationError("Base retry delay must be between 50ms and 1000ms");
     }
 
     if (retry.max_delay_ms < retry.base_delay_ms ||
         retry.max_delay_ms > 10000) {
-        throw ConfigValidationError(
-                "Max retry delay must be between base delay and 10000ms");
+        throw ConfigValidationError("Max retry delay must be between base delay and 10000ms");
     }
 
     // 验证指数退避策略的合理性
@@ -152,8 +147,7 @@ void DNSConfigValidator::validateRetry(const RetryConfig &retry) {
     }
 
     if (max_possible_delay > retry.max_delay_ms) {
-        throw ConfigValidationError(
-                "Retry delay progression exceeds max delay");
+        throw ConfigValidationError("Retry delay progression exceeds max delay");
     }
 }
 
@@ -161,21 +155,17 @@ void DNSConfigValidator::validateMetrics(const MetricsConfig &metrics) {
     if (metrics.enabled) {
         if (metrics.report_interval_sec < 1 ||
             metrics.report_interval_sec > 3600) {
-            throw ConfigValidationError(
-                    "Metrics report interval must be between 1 and 3600 seconds");
+            throw ConfigValidationError("Metrics report interval must be between 1 and 3600 seconds");
         }
-#if 0
-        if (!isValidPath(metrics.metrics_file)) {
-            throw ConfigValidationError(
-                    "Invalid metrics file path: " + metrics.metrics_file);
+
+        if (!metrics.metrics_file.empty() && !isValidPath(metrics.metrics_file)) {
+            throw ConfigValidationError("Invalid metrics file path: " + metrics.metrics_file);
         }
-#endif
+
         // 验证Prometheus地址格式
-        size_t pos = metrics.prometheus_address.find(':');
+        const size_t pos = metrics.prometheus_address.find(':');
         if (pos == std::string::npos) {
-            throw ConfigValidationError(
-                    "Invalid Prometheus address format: " +
-                    metrics.prometheus_address);
+            throw ConfigValidationError("Invalid Prometheus address format: " + metrics.prometheus_address);
         }
 
         std::string host = metrics.prometheus_address.substr(0, pos);
@@ -184,12 +174,10 @@ void DNSConfigValidator::validateMetrics(const MetricsConfig &metrics) {
         try {
             int port = std::stoi(port_str);
             if (port < 1 || port > 65535) {
-                throw ConfigValidationError(
-                        "Invalid Prometheus port: " + port_str);
+                throw ConfigValidationError("Invalid Prometheus port: " + port_str);
             }
         } catch (const std::exception &) {
-            throw ConfigValidationError(
-                    "Invalid Prometheus port: " + port_str);
+            throw ConfigValidationError("Invalid Prometheus port: " + port_str);
         }
     }
 }
@@ -232,8 +220,7 @@ bool DNSConfigValidator::isValidPath(const std::string &path) {
         if (parent.empty()) {
             return false;
         }
-        return std::filesystem::exists(parent) &&
-               std::filesystem::is_directory(parent);
+        return std::filesystem::exists(parent) && std::filesystem::is_directory(parent);
     } catch (const std::exception &) {
         return false;
     }

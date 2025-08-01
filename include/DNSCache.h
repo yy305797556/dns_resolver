@@ -17,6 +17,8 @@ struct DNSRecord {
 
 class DNSCache {
 public:
+    using ForEachFn = std::function<void(const std::string &, const DNSRecord &)>;
+
     explicit DNSCache(std::chrono::seconds ttl = std::chrono::seconds(300));
 
     void update(const std::string &hostname, const std::vector<std::string> &ips);
@@ -27,7 +29,7 @@ public:
     void clear();
 
     // 遍历缓存的方法
-    void forEach(std::function<void(const std::string &, const DNSRecord &)> fn) const;
+    void forEach(const ForEachFn &fn) const;
 
     // 获取缓存统计信息
     size_t size() const;

@@ -28,7 +28,7 @@ bool DNSConfigVersion::saveVersion(const nlohmann::json &config, const std::stri
     try {
         ConfigVersion version;
         version.version = generateVersionId();
-        version.timestamp = DNSUtils::getTime();
+        version.timestamp = std::to_string(DNSUtils::getTime());
         version.author = author;
         version.comment = comment;
         version.config = config;
@@ -82,9 +82,7 @@ bool DNSConfigVersion::rollback(const std::string &version) {
         rollback_version.config = target_version.config;
 
         // 保存回滚版本
-        if (!saveVersion(rollback_version.config,
-                         rollback_version.author,
-                         rollback_version.comment)) {
+        if (!saveVersion(rollback_version.config, rollback_version.author, rollback_version.comment)) {
             return false;
         }
 
@@ -121,10 +119,10 @@ std::vector<ConfigVersion> DNSConfigVersion::getVersionHistory() const {
         }
 
         // 按时间戳排序
-        std::sort(versions.begin(), versions.end(),
-                  [](const ConfigVersion &a, const ConfigVersion &b) {
-                      return a.timestamp < b.timestamp;
-                  });
+        std::ranges::sort(versions,
+                          [](const ConfigVersion &a, const ConfigVersion &b) {
+                              return a.timestamp < b.timestamp;
+                          });
 
     } catch (const std::exception &) {
         // 处理文件系统错误
@@ -141,10 +139,7 @@ ConfigVersion DNSConfigVersion::getCurrentVersion() const {
     return version;
 }
 
-bool DNSConfigVersion::compareVersions(
-        const std::string &version1,
-        const std::string &version2,
-        std::vector<std::string> &differences) const {
+bool DNSConfigVersion::compareVersions(const std::string &version1, const std::string &version2, std::vector<std::string> &differences) const {
 
     try {
         ConfigVersion v1, v2;
@@ -160,9 +155,7 @@ bool DNSConfigVersion::compareVersions(
     }
 }
 
-bool DNSConfigVersion::exportVersion(
-        const std::string &version,
-        const std::string &output_file) const {
+bool DNSConfigVersion::exportVersion(const std::string &version, const std::string &output_file) const {
 
     try {
         ConfigVersion v;
@@ -211,14 +204,11 @@ std::string DNSConfigVersion::generateVersionId() const {
     return ss.str();
 }
 
-std::string DNSConfigVersion::getVersionPath(
-        const std::string &version) const {
+std::string DNSConfigVersion::getVersionPath(const std::string &version) const {
     return version_dir_ + "/" + version + ".json";
 }
 
-bool DNSConfigVersion::loadVersion(
-        const std::string &version,
-        ConfigVersion &config) const {
+bool DNSConfigVersion::loadVersion(const std::string &version, ConfigVersion &config) const {
 
     try {
         std::string version_path = getVersionPath(version);
@@ -242,8 +232,7 @@ bool DNSConfigVersion::loadVersion(
     }
 }
 
-bool DNSConfigVersion::validateVersion(
-        const ConfigVersion &version) const {
+bool DNSConfigVersion::validateVersion(const ConfigVersion &version) const {
 
     // 检查必填字段
     if (version.version.empty() ||

@@ -35,14 +35,13 @@ void DNSCache::update(const std::string &hostname,
 
 bool DNSCache::get(const std::string &hostname, std::vector<std::string> &ips) {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto it = cache_.find(hostname);
+    const auto it = cache_.find(hostname);
     if (it == cache_.end()) {
         ++misses_;
         return false;
     }
     auto &record = it->second;
-    auto now = std::chrono::system_clock::now();
-
+    const auto now = std::chrono::system_clock::now();
     if (now >= record.expire_time || !record.is_valid) {
         cache_.erase(it);
         ++misses_;
@@ -53,10 +52,10 @@ bool DNSCache::get(const std::string &hostname, std::vector<std::string> &ips) {
     ++hits_;
 
     // 如果记录即将过期（TTL的20%以内），异步刷新
-    auto remaining = std::chrono::duration_cast<std::chrono::seconds>(
-                             record.expire_time - now)
-                             .count();
-    if (remaining < ttl_.count() * 0.2) {
+    const auto remaining = std::chrono::duration_cast<std::chrono::seconds>(
+                                   record.expire_time - now)
+                                   .count();
+    if (remaining < static_cast<int64_t>(ttl_.count() * 0.2)) {
         record.is_valid = false;// 标记为需要刷新
     }
     return true;
@@ -74,8 +73,7 @@ void DNSCache::clear() {
     misses_ = 0;
 }
 
-void DNSCache::forEach(
-        std::function<void(const std::string &, const DNSRecord &)> fn) const {
+void DNSCache::forEach(const ForEachFn &fn) const {
     std::lock_guard<std::mutex> lock(mutex_);
     for (const auto &[hostname, record]: cache_) {
         fn(hostname, record);
@@ -92,7 +90,7 @@ size_t DNSCache::capacity() const {
 }
 
 double DNSCache::hit_rate() const {
-    auto total = hits_.load() + misses_.load();
+    const auto total = hits_.load() + misses_.load();
     if (total == 0) {
         return 0.0;
     }
@@ -123,7 +121,7 @@ void DNSCache::cleanup() {
                           });
 
         // 删除20%的最早过期记录
-        const size_t records_to_remove = static_cast<size_t>(cache_.size() * 0.2);
+        const auto records_to_remove = static_cast<size_t>(cache_.size() * 0.2);
         for (size_t i = 0; i < records_to_remove && i < expire_times.size(); ++i) {
             cache_.erase(expire_times[i].first);
         }

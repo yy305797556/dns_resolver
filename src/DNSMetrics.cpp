@@ -4,7 +4,6 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <numeric>
-#include <sstream>
 
 constexpr size_t MAX_SAMPLES = 1000;
 

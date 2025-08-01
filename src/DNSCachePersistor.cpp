@@ -71,29 +71,25 @@ bool DNSCachePersistor::load(DNSCache &cache, const std::string &filename) {
         }
 
         // 检查缓存是否过期
-        auto cache_time = std::chrono::system_clock::time_point(
-                std::chrono::milliseconds(cache_data[CACHE_FIELD_NAME_TIMESTAMP]));
-        auto now = std::chrono::system_clock::now();
+        const auto cache_time = TimePoint(Milliseconds(cache_data[CACHE_FIELD_NAME_TIMESTAMP]));
+        const auto now = std::chrono::system_clock::now();
         if ((now - cache_time).count() > MAX_CACHE_AGE) {
             std::cerr << "Cache file is too old, ignoring" << std::endl;
             return false;
         }
 
         // 加载缓存条目
-        if (!cache_data.contains(CACHE_FIELD_NAME_RECORDS) ||
-            !cache_data[CACHE_FIELD_NAME_RECORDS].is_array()) {
+        if (!cache_data.contains(CACHE_FIELD_NAME_RECORDS) || !cache_data[CACHE_FIELD_NAME_RECORDS].is_array()) {
             throw std::runtime_error("Invalid cache records format");
         }
 
         for (const auto &recordJson: cache_data[CACHE_FIELD_NAME_RECORDS]) {
-            DNSRecord record = deserializeRecord(recordJson);
-
+            auto record = deserializeRecord(recordJson);
             // 只加载未过期的记录
             if (record.is_valid && record.expire_time > now) {
                 cache.update(record.hostname, record.ip_addresses);
             }
         }
-
         return true;
     } catch (const std::exception &e) {
         std::cerr << "Error loading cache: " << e.what() << std::endl;
@@ -157,9 +153,8 @@ bool DNSCachePersistor::isValidCache(const std::string &filename) {
         }
 
         // 检查时间戳
-        auto cache_time = std::chrono::system_clock::time_point(
-                std::chrono::milliseconds(cache_data[CACHE_FIELD_NAME_TIMESTAMP]));
-        auto now = std::chrono::system_clock::now();
+        const auto cache_time = TimePoint(Milliseconds(cache_data[CACHE_FIELD_NAME_TIMESTAMP]));
+        const auto now = std::chrono::system_clock::now();
         if ((now - cache_time).count() > MAX_CACHE_AGE) {
             return false;
         }
